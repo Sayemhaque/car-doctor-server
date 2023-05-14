@@ -1,5 +1,5 @@
 const express = require('express');
-const { MongoClient, ServerApiVersion,ObjectId } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 require("dotenv").config()
 const app = express();
@@ -26,28 +26,44 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
-    
-    const servicesCollection = client.db("car-doctor").collection("services")
 
-     app.get('/services' , async (req,res) => {
-        const cursor = await servicesCollection.find()
-        const result = await cursor.toArray()
-        res.send(result)
-     } )
+    const servicesCollection = client.db("car-doctor").collection("services")
+    const ordersCollection = client.db("car-doctor").collection("orders")
+
+    app.get('/services', async (req, res) => {
+      const cursor = await servicesCollection.find()
+      const result = await cursor.toArray()
+      res.send(result)
+    })
 
     //  single service
-    
-    app.get('/services/:id' , async (req,res) => {
-        const id = req.params.id;
-        const query = {_id: new ObjectId(id)}
-        const options = {
-            projection: {  title: 1, price: 1 , service_id:1},
-          };
-      
-        const result = await servicesCollection.findOne(query,options)
-        res.send(result) 
+    app.get('/services/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const options = {
+        projection: { title: 1, price: 1, service_id: 1, img: 1 },
+      };
+      const result = await servicesCollection.findOne(query, options)
+      res.send(result)
     })
-    await client.db("admin").command({ ping: 1 });
+
+    // orders
+
+    app.get('/orders', async (req, res) => {
+      let query = {}
+      if (req.query?.email) {
+        query = { email: req.query.email }
+      }
+      const result = await ordersCollection.find(query).toArray()
+      res.send(result)
+    })
+
+    app.post('/orders', async (req, res) => {
+      const order = req.body;
+      const result = await ordersCollection.insertOne(order)
+      res.send(result)
+    })
+
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // await client.close();
@@ -56,11 +72,11 @@ async function run() {
 run().catch(console.dir);
 
 
-app.get("/" , (req,res) => {
-    res.send("server is running sir vai mia")
+app.get("/", (req, res) => {
+  res.send("server is running sir vai mia")
 })
 
 
 app.listen(PORT, () => {
-    console.log(`app is running on ${PORT}`)
+  console.log(`app is running on ${PORT}`)
 })
